@@ -1,0 +1,103 @@
+=== resize.java ===
+```java
+package com.example;
+
+import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.RequestHandler;
+import software.amazon.awssdk.core.ResponseBytes;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+
+import javax.imageio.ImageIO;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.HashMap;
+import java.util.Map;
+
+public class resize implements RequestHandler<Map<String, Object>, Map<String, Object>> {
+
+    private final S3Client s3Client = S3Client.builder().build();
+
+    @Override
+    public Map<String, Object> handleRequest(Map<String, Object> event, Context context) {
+        try {
+            String bucket = (String) event.get("bucket");
+            String key = (String) event.get("key");
+
+            context.getLogger().log("Processing: " + bucket + "/" + key);
+
+            ResponseBytes<GetObjectResponse> objectBytes = s3Client.getObjectAsBytes(
+                GetObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .build()
+            );
+
+            byte[] imageBytes = objectBytes.asByteArray();
+            String contentType = objectBytes.response().contentType();
+
+            BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(imageBytes));
+            if (originalImage == null) {
+                throw new RuntimeException("Failed to read image");
+            }
+
+            int originalWidth = originalImage.getWidth();
+            int originalHeight = originalImage.getHeight();
+
+            BufferedImage resizedImage;
+            if (originalWidth <= 800) {
+                resizedImage = originalImage;
+            } else {
+                int newWidth = 800;
+                int newHeight = (int) ((double) originalHeight * newWidth / originalWidth);
+
+                resizedImage = new BufferedImage(newWidth, newHeight, originalImage.getType());
+                Graphics2D g = resizedImage.createGraphics();
+                g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                g.drawImage(originalImage, 0, 0, newWidth, newHeight, null);
+                g.dispose();
+            }
+
+            String formatName = getFormatName(key);
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            ImageIO.write(resizedImage, formatName, outputStream);
+            byte[] resizedBytes = outputStream.toByteArray();
+
+            String outputKey = "resized/" + key;
+            s3Client.putObject(
+                PutObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(outputKey)
+                    .contentType(contentType)
+                    .build(),
+                RequestBody.fromBytes(resizedBytes)
+            );
+
+            context.getLogger().log("Resized image uploaded to: " + bucket + "/" + outputKey);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("bucket", bucket);
+            result.put("key", outputKey);
+            return result;
+
+        } catch (Exception e) {
+            context.getLogger().log("Error: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+    private String getFormatName(String key) {
+        String lowerKey = key.toLowerCase();
+        if (lowerKey.endsWith(".png")) return "png";
+        if (lowerKey.endsWith(".gif")) return "gif";
+        if (lowerKey.endsWith(".bmp")) return "bmp";
+        return "jpg";
+    }
+}
+```

@@ -1,0 +1,82 @@
+=== rotate.java ===
+```java
+package com.imageprocessing;
+
+import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.RequestHandler;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+
+import javax.imageio.ImageIO;
+import java.awt.Graphics2D;
+import java.awt.geom.AffineTransform;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.HashMap;
+import java.util.Map;
+
+public class RotateHandler implements RequestHandler<Map<String, Object>, Map<String, Object>> {
+
+    @Override
+    public Map<String, Object> handleRequest(Map<String, Object> event, Context context) {
+        String bucket = (String) event.get("bucket");
+        String key = (String) event.get("key");
+
+        S3Client s3Client = S3Client.builder().build();
+
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .build();
+
+        ResponseInputStream<GetObjectResponse> s3Object = s3Client.getObject(getObjectRequest);
+
+        try {
+            byte[] imageBytes = s3Object.readAllBytes();
+            BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(imageBytes));
+
+            int width = originalImage.getWidth();
+            int height = originalImage.getHeight();
+
+            BufferedImage rotatedImage = new BufferedImage(height, width, originalImage.getType());
+
+            Graphics2D g2d = rotatedImage.createGraphics();
+            AffineTransform transform = new AffineTransform();
+            transform.translate(height / 2.0, width / 2.0);
+            transform.rotate(Math.PI / 2);
+            transform.translate(-width / 2.0, -height / 2.0);
+            g2d.setTransform(transform);
+            g2d.drawImage(originalImage, 0, 0, null);
+            g2d.dispose();
+
+            String format = key.substring(key.lastIndexOf('.') + 1);
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            ImageIO.write(rotatedImage, format, outputStream);
+            byte[] rotatedBytes = outputStream.toByteArray();
+
+            String outputKey = "rotated/" + key;
+
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(outputKey)
+                    .build();
+
+            s3Client.putObject(putObjectRequest, RequestBody.fromBytes(rotatedBytes));
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("bucket", bucket);
+            result.put("key", outputKey);
+
+            return result;
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```

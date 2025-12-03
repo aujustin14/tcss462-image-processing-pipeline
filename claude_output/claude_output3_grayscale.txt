@@ -1,0 +1,78 @@
+=== grayscale.java ===
+```java
+package com.example;
+
+import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.RequestHandler;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+
+import javax.imageio.ImageIO;
+import java.awt.color.ColorSpace;
+import java.awt.image.BufferedImage;
+import java.awt.image.ColorConvertOp;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.HashMap;
+import java.util.Map;
+
+public class GrayscaleHandler implements RequestHandler<Map<String, Object>, Map<String, Object>> {
+
+    private final S3Client s3Client = S3Client.builder().build();
+
+    @Override
+    public Map<String, Object> handleRequest(Map<String, Object> event, Context context) {
+        try {
+            String bucket = (String) event.get("bucket");
+            String key = (String) event.get("key");
+
+            GetObjectRequest getRequest = GetObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .build();
+
+            byte[] imageBytes = s3Client.getObject(getRequest).readAllBytes();
+
+            BufferedImage inputImage = ImageIO.read(new ByteArrayInputStream(imageBytes));
+            
+            String formatName = getImageFormat(key);
+
+            ColorSpace grayColorSpace = ColorSpace.getInstance(ColorSpace.CS_GRAY);
+            ColorConvertOp colorConvertOp = new ColorConvertOp(grayColorSpace, null);
+            BufferedImage grayscaleImage = colorConvertOp.filter(inputImage, null);
+
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            ImageIO.write(grayscaleImage, formatName, outputStream);
+            byte[] outputBytes = outputStream.toByteArray();
+
+            String outputKey = "grayscale/" + key;
+            PutObjectRequest putRequest = PutObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(outputKey)
+                    .build();
+
+            s3Client.putObject(putRequest, RequestBody.fromBytes(outputBytes));
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("bucket", bucket);
+            response.put("key", outputKey);
+            response.put("status", "success");
+
+            return response;
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private String getImageFormat(String key) {
+        int lastDot = key.lastIndexOf('.');
+        if (lastDot > 0) {
+            return key.substring(lastDot + 1).toLowerCase();
+        }
+        return "png";
+    }
+}
+```
