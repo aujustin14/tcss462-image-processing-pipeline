@@ -1,0 +1,63 @@
+You are generating AWS Lambda source code using Java 21. 
+Produce only the source code file, no explanations.
+
+Write a single Java class file implementing an AWS Lambda handler that resizes an image stored in Amazon S3. This is stage 1 of a 3-stage image processing pipeline.
+
+===========================
+STRICT REQUIREMENTS
+===========================
+
+1. LANGUAGE:
+   - Java 21.
+
+2. HANDLER SIGNATURE:
+   Implement:
+   com.amazonaws.services.lambda.runtime.RequestHandler<Map<String,Object>, Map<String,Object>>
+
+3. INPUT EVENT FORMAT:
+   The event MUST be a Map<String,Object> containing exactly:
+     - "bucket" : String (S3 bucket name)
+     - "key"    : String (S3 object key for the input image)
+
+4. PROCESSING STEPS:
+   - Download the object from S3 using AWS SDK v2:
+       software.amazon.awssdk.services.s3.S3Client
+   - Load image bytes into a BufferedImage using javax.imageio.ImageIO
+   - Perform image resizing with the following rules:
+       * Maximum width = 800 pixels
+       * Maintain aspect ratio
+       * If the original width is <= 800, do NOT upscale
+   - Store the resized image entirely in memory
+   - Do NOT use /tmp
+   - Do NOT use external image manipulation libraries (only java.awt and ImageIO)
+
+5. OUTPUT STORAGE:
+   - Upload the resized image BACK to the SAME bucket
+   - The output key MUST be exactly:
+       "resized/" + originalKey
+
+6. RETURN FORMAT:
+   Return a Map<String,Object> containing:
+     - "bucket" : <same bucket>
+     - "key"    : <new resized image key>
+
+7. ERROR HANDLING:
+   - Catch S3 and image read/write errors
+   - Log errors
+   - Throw RuntimeException on failure
+
+8. RESTRICTIONS:
+   - No temp files
+   - No presigned URLs
+   - No bucket name hardcoding
+   - No comments except where absolutely needed for valid Java syntax
+   - The code MUST compile without modification
+   - Do NOT alter the image format (keep original format)
+
+9. OUTPUT FORMAT:
+   The response MUST be structured as follows:
+
+   === resize.java ===
+   <entire Java class here>
+
+   Do not include any additional text or explanation.

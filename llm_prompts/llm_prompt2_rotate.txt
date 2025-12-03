@@ -1,0 +1,55 @@
+You are generating AWS Lambda source code using Java 21. 
+Produce only the source code file, no explanations.
+
+Write a single Java class file implementing an AWS Lambda handler that rotates an image stored in Amazon S3. This is stage 2 of a 3-stage image processing pipeline.
+
+===========================
+STRICT REQUIREMENTS
+===========================
+
+1. LANGUAGE:
+   - Java 21.
+
+2. HANDLER SIGNATURE:
+   Implement:
+   com.amazonaws.services.lambda.runtime.RequestHandler<Map<String,Object>, Map<String,Object>>
+
+3. INPUT EVENT FORMAT (MUST be followed exactly):
+   The Lambda event MUST be a Map<String,Object> containing:
+     - "bucket" : String  (S3 bucket name)
+     - "key"    : String  (S3 key of the input image)
+
+4. PROCESSING STEPS:
+   - Create an S3Client using AWS SDK v2 (software.amazon.awssdk.services.s3.S3Client)
+   - Download the image bytes from S3
+   - Convert to BufferedImage using javax.imageio.ImageIO
+   - Rotate the image exactly 90 degrees clockwise using only:
+       * BufferedImage
+       * Graphics2D
+       * AffineTransform
+     No external image libraries allowed.
+
+5. OUTPUT STORAGE:
+   - Upload the rotated image back to the SAME S3 bucket
+   - Output key MUST be:
+       "rotated/" + originalKey
+
+6. RETURN VALUE (MUST follow exactly):
+   Return a Map<String,Object>:
+     - "bucket" : <same bucket>
+     - "key"    : <output key>
+
+7. RESTRICTIONS:
+   - Do NOT use /tmp
+   - Do NOT use external libraries
+   - Do NOT modify image format (keep same format as input)
+   - Do NOT hardcode the bucket or region
+   - Do NOT add comments except minimal syntactic ones
+   - The code MUST compile without modification
+
+8. OUTPUT FORMAT:
+   The answer MUST follow this structure:
+   === rotate.java ===
+   <entire Java class here>
+
+   Do not include any additional text or explanation.
