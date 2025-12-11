@@ -1,3 +1,5 @@
+package lambda;
+
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import java.awt.color.ColorSpace;
@@ -16,7 +18,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-public class grayscale
+public class Grayscale
   implements RequestHandler<Map<String, Object>, Map<String, Object>>
 {
 
@@ -31,7 +33,7 @@ public class grayscale
     }
     String bucket = (String) event.get("bucket");
     String key = (String) event.get("key");
-    String outKey = "grayscale/" + key;
+    String outKey = "chatgpt_grayscale/" + key;
     try (S3Client s3 = S3Client.create()) {
       GetObjectRequest getReq = GetObjectRequest.builder()
         .bucket(bucket)

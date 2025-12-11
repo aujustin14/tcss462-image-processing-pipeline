@@ -26,7 +26,7 @@ public class Rotate implements RequestHandler<Map<String, Object>, Map<String, O
         
         String bucket = (String) event.get("bucket");
         String key = (String) event.get("key");
-        String outKey = "rotated/" + key;
+        String outKey = "chatgpt_rotated/" + key;
         
         try (S3Client s3 = S3Client.create()) {
             GetObjectRequest getReq = GetObjectRequest.builder().bucket(bucket).key(key).build();
