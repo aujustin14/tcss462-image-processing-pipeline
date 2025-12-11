@@ -6,8 +6,8 @@
     "threads": 1,
 
     "parentPayload": {
-        "bucket": "image-input",
-        "key": "sample.jpg"
+        "bucket": "tcss462-image-processing-pipeline",
+        "key": "small.jpg"
     },
 
     "payloads": [],

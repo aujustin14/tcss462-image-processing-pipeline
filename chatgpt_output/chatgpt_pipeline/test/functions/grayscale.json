@@ -1,6 +1,6 @@
 {
     "function": "chatgptGrayscale",
     "platform": "AWS Lambda",
-    "source": "../java_template",
+    "source": "../../../chatgpt_grayscale",
     "endpoint": ""
 }

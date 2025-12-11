@@ -1,1 +1,35 @@
+# OS files
 .DS_Store
+Thumbs.db
+
+# Maven build output
+**/target/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Logs
+*.log
+
+# AWS/Lambda artifacts
+*.zip
+*.jar
+
+# History/output from faas_runner
+**/history/
+
+# Temporary files
+*.tmp
+*.bak
