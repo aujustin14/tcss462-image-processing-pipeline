@@ -1,3 +1,5 @@
+package lambda;
+
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
@@ -35,7 +37,7 @@ public class Resize implements RequestHandler<Map<String,Object>, Map<String,Obj
             }
             bucket = (String) b;
             key = (String) k;
-            String outKey = "resized/" + key;
+            String outKey = "chatgpt_resized/" + key;
             try (S3Client s3 = S3Client.create()) {
                 GetObjectRequest getReq = GetObjectRequest.builder().bucket(bucket).key(key).build();
                 ResponseBytes<GetObjectResponse> objectBytes = s3.getObject(getReq, software.amazon.awssdk.core.sync.ResponseTransformer.toBytes());
@@ -59,18 +61,15 @@ public class Resize implements RequestHandler<Map<String,Object>, Map<String,Obj
                 } else {
                     int newWidth = 800;
                     int newHeight = (int) Math.round((double) srcHeight * ((double) newWidth / (double) srcWidth));
-                    BufferedImage dest = new BufferedImage(newWidth, newHeight, srcImage.getType() == 0 ? BufferedImage.TYPE_INT_ARGB : srcImage.getType());
+                    BufferedImage dest = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_RGB);
                     Graphics2D g2 = dest.createGraphics();
                     g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-                    g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    g2.drawImage(srcImage.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH), 0, 0, null);
+                    g2.drawImage(srcImage, 0, 0, newWidth, newHeight, null);
                     g2.dispose();
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     boolean wrote = ImageIO.write(dest, format, baos);
                     if (!wrote) {
-                        context.getLogger().log("ImageIO failed to write image in format: " + format);
-                        throw new RuntimeException("Failed to write resized image in format: " + format);
+                        throw new RuntimeException("ImageIO failed to write resized image");
                     }
                     outputBytes = baos.toByteArray();
                 }
