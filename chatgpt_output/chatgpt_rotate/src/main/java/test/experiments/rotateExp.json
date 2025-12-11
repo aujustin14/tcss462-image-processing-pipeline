@@ -1,0 +1,7 @@
+{
+    "callWithCLI": true,
+    "callAsync": false,
+    "runs": 1,
+    "threads": 1
+}
+  

@@ -1,0 +1,24 @@
+{
+    "callWithCLI": true,
+    "callAsync": false,
+
+    "runs": 1,
+    "threads": 1,
+
+    "parentPayload": {
+        "bucket": "image-input",
+        "key": "sample.jpg"
+    },
+
+    "payloads": [],
+
+    "iterations": 1,
+    "sleepTime": 0,
+
+    "memorySettings": [],
+
+    "openCSV": true,
+    "combineSheets": true,
+    "warmupBuffer": 0
+}
+  
