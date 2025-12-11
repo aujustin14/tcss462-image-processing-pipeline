@@ -1,7 +1,8 @@
 {
     "callWithCLI": true,
-    "callAsync": false,
+    "payloads": [{}],
     "runs": 1,
-    "threads": 1
-}
+    "threads": 1,
+    "passPayloads": true
+  }
   

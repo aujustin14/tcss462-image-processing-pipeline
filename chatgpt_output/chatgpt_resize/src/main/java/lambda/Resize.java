@@ -78,7 +78,8 @@ public class Resize implements RequestHandler<Map<String,Object>, Map<String,Obj
                 Map<String,Object> result = new HashMap<>();
                 result.put("bucket", bucket);
                 result.put("key", outKey);
-
+                result.put("status", "success");
+                result.put("version", 1); 
                 return result;
             } catch (S3Exception e) {
                 context.getLogger().log("S3 error: " + e.awsErrorDetails().errorMessage());

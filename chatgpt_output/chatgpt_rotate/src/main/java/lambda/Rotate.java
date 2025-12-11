@@ -65,6 +65,8 @@ public class Rotate implements RequestHandler<Map<String, Object>, Map<String, O
             Map<String, Object> result = new HashMap<>();
             result.put("bucket", bucket);
             result.put("key", outKey);
+            result.put("status", "success");
+            result.put("version", 1); 
             return result;
         } catch (IOException e) {
             throw new RuntimeException(e);
