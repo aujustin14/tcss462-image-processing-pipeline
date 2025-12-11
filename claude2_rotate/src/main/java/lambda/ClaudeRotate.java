@@ -93,7 +93,7 @@ public class ClaudeRotate implements RequestHandler<HashMap<String, Object>, Has
             byte[] rotatedBytes = outputStream.toByteArray();
 
             // Upload rotated image to S3
-            String outputKey = "rotated/" + key;
+            String outputKey = "claude_rotated/" + key;
 
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucket)

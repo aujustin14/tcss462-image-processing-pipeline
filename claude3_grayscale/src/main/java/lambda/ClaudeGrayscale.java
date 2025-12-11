@@ -91,7 +91,7 @@ public class ClaudeGrayscale implements RequestHandler<HashMap<String, Object>, 
             inspector.addAttribute("outputSize", outputBytes.length);
 
             // Upload grayscale image to S3
-            String outputKey = "grayscale/" + key;
+            String outputKey = "claude_grayscale/" + key;
             PutObjectRequest putRequest = PutObjectRequest.builder()
                     .bucket(bucket)
                     .key(outputKey)

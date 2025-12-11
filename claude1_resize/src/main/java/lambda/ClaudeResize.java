@@ -104,7 +104,7 @@ public class ClaudeResize implements RequestHandler<HashMap<String, Object>, Has
             byte[] resizedBytes = outputStream.toByteArray();
 
             // Upload to S3
-            String outputKey = "resized/" + key;
+            String outputKey = "claude_resized/" + key;
             s3Client.putObject(
                     PutObjectRequest.builder()
                             .bucket(bucket)
