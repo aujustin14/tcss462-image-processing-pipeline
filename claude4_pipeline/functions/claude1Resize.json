@@ -1,0 +1,6 @@
+{
+    "function": "claudeResize",
+    "platform": "AWS Lambda",
+    "source": "../claude1_resize",
+    "endpoint": ""
+}

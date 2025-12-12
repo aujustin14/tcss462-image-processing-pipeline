@@ -1,0 +1,6 @@
+{
+	"function": "claudeGrayscale",
+    "platform": "AWS Lambda",
+    "source": "../claude3_grayscale",
+    "endpoint": ""
+}

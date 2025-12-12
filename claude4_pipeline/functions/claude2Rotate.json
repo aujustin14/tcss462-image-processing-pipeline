@@ -1,0 +1,6 @@
+{
+	"function": "claudeRotate",
+    "platform": "AWS Lambda",
+    "source": "../claude2_rotate",
+    "endpoint": ""
+}

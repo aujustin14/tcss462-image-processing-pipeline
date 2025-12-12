@@ -1,0 +1,20 @@
+{
+    "callWithCLI": true,
+    "callAsync": false,
+    "runs": 1,
+    "threads": 1,
+    "parentPayload": {
+      "bucket": "tcss462-image-processing-pipeline",
+      "key": "small.jpg"
+    },
+    "payloads": [
+      {
+        "bucket": "tcss462-image-processing-pipeline",
+        "key": "small.jpg"
+      }
+    ],
+    "iterations": 1,
+    "sleepTime": 0,
+    "passPayloads": true
+  }
+  
