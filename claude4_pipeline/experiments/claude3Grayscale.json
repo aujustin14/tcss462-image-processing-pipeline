@@ -1,7 +1,14 @@
 {
     "callWithCLI": true,
-    "payloads": [{}],
-    "runs": 1,
-    "threads": 1,
-    "passPayloads": true
-}
+    "callAsync": false,
+    "runs": 50,
+    "threads": 50,
+    "payloads": [
+      {
+        "bucket": "tcss462-image-processing-pipeline",
+        "key": "claude_rotated/claude_resized/small.jpg"
+      }
+    ],
+    "iterations": 1,
+    "sleepTime": 0
+  }
