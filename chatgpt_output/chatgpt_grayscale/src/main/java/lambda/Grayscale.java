@@ -7,9 +7,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.ColorConvertOp;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.HashMap;
-import java.util.Map;
 import javax.imageio.ImageIO;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -17,91 +15,97 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import saaf.Inspector;
+import saaf.Response;
 
-public class Grayscale
-  implements RequestHandler<Map<String, Object>, Map<String, Object>>
-{
+public class Grayscale implements RequestHandler<HashMap<String, Object>, HashMap<String, Object>> {
 
-  public Map<String, Object> handleRequest(
-    Map<String, Object> event,
-    Context context
-  ) {
-    if (
-      event == null || !event.containsKey("bucket") || !event.containsKey("key")
-    ) {
-      throw new RuntimeException("Event must contain 'bucket' and 'key'");
-    }
-    String bucket = (String) event.get("bucket");
-    String key = (String) event.get("key");
-    String outKey = "chatgpt_grayscale/" + key;
-    try (S3Client s3 = S3Client.create()) {
-      GetObjectRequest getReq = GetObjectRequest.builder()
-        .bucket(bucket)
-        .key(key)
-        .build();
-      ResponseBytes<GetObjectResponse> bytes = s3.getObject(
-        getReq,
-        software.amazon.awssdk.core.sync.ResponseTransformer.toBytes()
-      );
-      byte[] inputBytes = bytes.asByteArray();
-      String contentType = bytes.response().contentType();
-      String format = detectFormat(contentType, key);
-      if (format == null) throw new RuntimeException(
-        "Cannot detect image format"
-      );
-      BufferedImage src = ImageIO.read(new ByteArrayInputStream(inputBytes));
-      if (src == null) throw new RuntimeException("Cannot read image");
-      BufferedImage dst = new BufferedImage(
-        src.getWidth(),
-        src.getHeight(),
-        src.getType() == 0 ? BufferedImage.TYPE_INT_ARGB : src.getType()
-      );
-      ColorConvertOp op = new ColorConvertOp(
-        ColorSpace.getInstance(ColorSpace.CS_GRAY),
-        null
-      );
-      op.filter(src, dst);
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      if (!ImageIO.write(dst, format, baos)) throw new RuntimeException(
-        "Failed to encode image"
-      );
-      byte[] outputBytes = baos.toByteArray();
-      PutObjectRequest putReq = PutObjectRequest.builder()
-        .bucket(bucket)
-        .key(outKey)
-        .contentType(
-          contentType != null ? contentType : "application/octet-stream"
-        )
-        .contentLength((long) outputBytes.length)
-        .build();
-      s3.putObject(putReq, RequestBody.fromBytes(outputBytes));
-      Map<String, Object> result = new HashMap<>();
-      result.put("bucket", bucket);
-      result.put("key", outKey);
-      result.put("status", "success");
-      result.put("version", 1); 
-      return result;
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
+    private final S3Client s3Client = S3Client.builder().build();
 
-  private String detectFormat(String contentType, String key) {
-    if (contentType != null) {
-      String ct = contentType.toLowerCase();
-      if (ct.equals("image/jpeg") || ct.equals("image/jpg")) return "jpeg";
-      if (ct.equals("image/png")) return "png";
-      if (ct.equals("image/gif")) return "gif";
-      if (ct.equals("image/bmp")) return "bmp";
-      if (ct.equals("image/webp")) return "webp";
-      if (ct.startsWith("image/")) return ct.substring(6);
+    public HashMap<String, Object> handleRequest(HashMap<String, Object> request, Context context) {
+        Inspector inspector = new Inspector();
+        inspector.inspectAll();
+
+        try {
+            String bucket = (String) request.get("bucket");
+            String key = (String) request.get("key");
+
+            inspector.addAttribute("bucket", bucket);
+            inspector.addAttribute("key", key);
+            context.getLogger().log("Processing: " + bucket + "/" + key);
+
+            ResponseBytes<GetObjectResponse> objectBytes = s3Client.getObjectAsBytes(
+                    GetObjectRequest.builder().bucket(bucket).key(key).build());
+            byte[] inputBytes = objectBytes.asByteArray();
+            String contentType = objectBytes.response().contentType();
+            String format = detectFormat(contentType, key);
+
+            BufferedImage src = ImageIO.read(new ByteArrayInputStream(inputBytes));
+            if (src == null) {
+                throw new RuntimeException("Failed to read image from S3 object");
+            }
+
+            int w = src.getWidth();
+            int h = src.getHeight();
+            inspector.addAttribute("originalWidth", w);
+            inspector.addAttribute("originalHeight", h);
+
+            BufferedImage dst = new BufferedImage(w, h,
+                    src.getType() == 0 ? BufferedImage.TYPE_INT_ARGB : src.getType());
+            ColorConvertOp op = new ColorConvertOp(
+                    ColorSpace.getInstance(ColorSpace.CS_GRAY), null);
+            op.filter(src, dst);
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(dst, format, baos);
+            byte[] outputBytes = baos.toByteArray();
+
+            String outKey = "chatgpt_grayscale/" + key;
+            s3Client.putObject(
+                    PutObjectRequest.builder()
+                            .bucket(bucket)
+                            .key(outKey)
+                            .contentType(contentType != null ? contentType : "application/octet-stream")
+                            .build(),
+                    RequestBody.fromBytes(outputBytes));
+
+            context.getLogger().log("Grayscale image uploaded to: " + bucket + "/" + outKey);
+
+            // Set bucket and key to OUTPUT values for pipeline chaining
+            inspector.addAttribute("bucket", bucket);
+            inspector.addAttribute("key", outKey);
+            inspector.addAttribute("message", "Image converted to grayscale");
+
+            Response response = new Response();
+            response.setValue("Grayscale completed successfully!");
+            inspector.consumeResponse(response);
+
+        } catch (Exception e) {
+            context.getLogger().log("Error: " + e.getMessage());
+            inspector.addAttribute("error", e.getMessage());
+            throw new RuntimeException(e);
+        }
+
+        inspector.inspectAllDeltas();
+        return inspector.finish();
     }
-    int idx = key.lastIndexOf('.');
-    if (idx >= 0 && idx < key.length() - 1) {
-      String ext = key.substring(idx + 1).toLowerCase();
-      if (ext.equals("jpg")) return "jpeg";
-      return ext;
+
+    private String detectFormat(String contentType, String key) {
+        if (contentType != null) {
+            String ct = contentType.toLowerCase();
+            if (ct.equals("image/jpeg") || ct.equals("image/jpg")) return "jpeg";
+            if (ct.equals("image/png")) return "png";
+            if (ct.equals("image/gif")) return "gif";
+            if (ct.equals("image/bmp")) return "bmp";
+        }
+        if (key != null) {
+            int idx = key.lastIndexOf('.');
+            if (idx >= 0 && idx < key.length() - 1) {
+                String ext = key.substring(idx + 1).toLowerCase();
+                if (ext.equals("jpg")) return "jpeg";
+                return ext;
+            }
+        }
+        return "jpeg";
     }
-    return null;
-  }
 }

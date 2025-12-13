@@ -1,16 +1,17 @@
 {
     "callWithCLI": true,
     "callAsync": false,
-    "runs": 1,
-    "threads": 1,
+    "runs": 50,
+    "threads": 50,
+    "memorySettings": [512, 513],
     "parentPayload": {
       "bucket": "tcss462-image-processing-pipeline",
-      "key": "large.jpg"
+      "key": "medium.jpg"
     },
     "payloads": [
       {
         "bucket": "tcss462-image-processing-pipeline",
-        "key": "large.jpg"
+        "key": "medium.jpg"
       }
     ],
     "iterations": 1,
